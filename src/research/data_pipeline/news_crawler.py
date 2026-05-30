@@ -1,13 +1,20 @@
-import logging
 import argparse
 import os
 import sys
 
 import pandas as pd
+
 from datetime import datetime
-from src.research.data_pipeline.daily_news_crawler import NYT, WSJ, CNBC
-from src.research.services.db_service import save_data_tosql, load_data_from_sql
+from src.research.data_pipeline.sources.nyt import NYTCrawler
+from src.research.data_pipeline.sources.wsj import WSJCrawler
+from src.research.data_pipeline.sources.cnbc import CNBCCrawler
+from src.research.services.db_service import save_data_tosql
 from src.research.utils.io import save_csv
+from src.research.utils.logging import setup_logging
+
+
+logger = setup_logging()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -45,23 +52,21 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     file_name = os.path.basename(__file__)
-    logging.info(
+    logger.info(
         "--------------------------------------------------------------------------------------------"
     )
-    logging.info(f"Start executing the program: {file_name}.")
+    logger.info(f"Start executing the program: {file_name}.")
 
     start_date = datetime.strptime(args.start_date, "%Y-%m-%d").date()
     end_date = datetime.strptime(args.end_date, "%Y-%m-%d").date()
 
-    nyt = NYT()
-    wsj = WSJ()
-    cnbc = CNBC()
-
     if args.provider.lower() == "nyt":
+        nyt = NYTCrawler()
         data = nyt.get_nytimes_data(start_date, end_date)
         data.set_index("Date", inplace=True)
 
     elif args.provider.lower() == "wsj":
+        wsj = WSJCrawler()
         data = wsj.get_wsj_data(start_date, end_date)
         # print(data)
         data.drop(
@@ -110,11 +115,12 @@ if __name__ == "__main__":
         # print(data)
 
     elif args.provider.lower() == "cnbc":
-        # urls = cnbc.get_cnbc_url(start_date, end_date)
-        # save_data_tosql(df=urls, table_name="cnbc_url", index=False)
+        cnbc = CNBCCrawler()
+        urls = cnbc.get_cnbc_url(start_date, end_date)
+        save_data_tosql(df=urls, table_name="cnbc_url", index=False)
         # urls = pd.read_csv("D:/research/cnbc_news_url.csv")
-        urls = load_data_from_sql(table_name="cnbc_url")
-        urls = urls[urls["Date"] == "2025-09-30"]
+        # urls = load_data_from_sql(table_name="cnbc_url")
+        # urls = urls[urls["Date"] == "2025-09-30"]
         data = cnbc.get_cnbc_data_date(urls)
         data.set_index("Date", inplace=True)
         data = data.reset_index() 
@@ -157,4 +163,4 @@ if __name__ == "__main__":
     else:
         save_csv(data)
 
-    logging.info("Program execution completed.")
+    logger.info("Program execution completed.")

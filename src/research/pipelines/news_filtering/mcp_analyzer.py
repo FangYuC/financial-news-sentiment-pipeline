@@ -20,6 +20,19 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.append(str(PROJECT_ROOT))
 
 
+def format_bert_output(bert_df: pd.DataFrame) -> pd.DataFrame:
+    bert_df = bert_df.copy()
+
+    bert_df = bert_df.rename(columns={
+        "pred_label": "bert_pred_label",
+        "prob_neu": "bert_prob_neu",
+        "prob_pos": "bert_prob_pos",
+        "prob_neg": "bert_prob_neg",
+    })
+
+    return bert_df
+
+
 class Stage3AnalysisSchema(BaseModel):
     chain_of_thought: str = Field(...,
                                   description="結合推理規則與市場環境，分析該新聞如何影響目標資產，不超過50字")
@@ -92,7 +105,7 @@ async def run_stage3_deep_analysis(semaphore, row, mcp_server, aclient, config) 
             )
 
             res = completion.choices[0].message.parsed
-            reasoning = re.sub(r"\s+", " ", res.chain_of_thought)
+            reasoning = re.sub(r"\s+", " ", res.chain_of_thought) if res else ""
             if not res:
                 return None
 
@@ -109,10 +122,21 @@ async def run_stage3_deep_analysis(semaphore, row, mcp_server, aclient, config) 
             return {
                 "date": row['date'],
                 "sentence": row['sentence'],
-                "prob_pos": p_pos,
-                "prob_neg": p_neg,
-                "prob_neu": p_neu,
-                "sentiment_intensity": res.intensity_score if res.direction != "neutral" else 0.0,
+
+                # ===== BERT =====
+                "bert_pred_label": row.get("bert_pred_label"),
+                "bert_prob_pos": row.get("bert_prob_pos"),
+                "bert_prob_neg": row.get("bert_prob_neg"),
+                "bert_prob_neu": row.get("bert_prob_neu"),
+
+                # ===== Agent =====
+                "agent_prob_pos": p_pos,
+                "agent_prob_neg": p_neg,
+                "agent_prob_neu": p_neu,
+
+                # ===== Intensity =====
+                "agent_intensity": res.intensity_score if res.direction != "neutral" else 0.0,
+
                 "reasoning": reasoning
             }
         except Exception as e:
@@ -142,6 +166,7 @@ async def main():
         return
 
     df = pd.read_csv(input_filename)
+    df = format_bert_output(df)
 
     # === output ===
     output_filename = PROJECT_ROOT / "data" / "features" / f"{args.ticker.lower()}_high_freq_ai_features.csv"
@@ -153,7 +178,7 @@ async def main():
 
     server_params = StdioServerParameters(
         command="python",
-        args=["-m", "research.analysis.mcp_server"],
+        args=["-m", "src.research.services.mcp_server"],
         env={"PYTHONPATH": "D:/research_project/src"})
 
     async with stdio_client(server_params) as (read_stream, write_stream):
