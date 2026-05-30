@@ -104,7 +104,12 @@ fig.add_trace(
 
 # 軌道二：利多新聞點 (紅色朝上三角形)
 df_pos = df_news_active[df_news_active['direction'] == "利多 (Bullish)"]
-df_pos["sentence_short"] = df_pos["sentence"].str.slice(0, 120) + "..."
+df_pos["sentence_short"] = (
+    df_pos["sentence"]
+    .fillna("")
+    .astype(str)
+    .str.slice(0, 120)
+)
 fig.add_trace(
     go.Scatter(
         x=df_pos['date'],
@@ -126,7 +131,12 @@ fig.add_trace(
 
 # 軌道三：利空新聞點 (綠色朝下三角形)
 df_neg = df_news_active[df_news_active['direction'] == "利空 (Bearish)"]
-df_neg["sentence_short"] = df_neg["sentence"].str.slice(0, 120) + "..."
+df_neg["sentence_short"] = (
+    df_neg["sentence"]
+    .fillna("")
+    .astype(str)
+    .str.slice(0, 120)
+)
 
 fig.add_trace(
     go.Scatter(
