@@ -4,6 +4,11 @@ A production-style full-stack system for financial news sentiment analysis and m
 
 ---
 
+## Live Demo
+
+Streamlit Dashboard: 
+https://financial-news-sentiment-pipeline.streamlit.app/
+
 ## 📊 Overview
 
 This project builds a **multi-asset sentiment analysis system** that:
@@ -19,14 +24,14 @@ It is designed as a **modular system with separated frontend and backend archite
 
 ## 🏗️ Architecture
 
-Streamlit (UI)
-   ↓
-FastAPI (Backend API)
-   ↓
-Data Service Layer
-   ↓
-BERT / FinBERT Models
-   ↓
+Streamlit (UI) <br>
+   ↓  <br>
+FastAPI (Backend API) <br>
+   ↓  <br>
+Data Service Layer <br>
+   ↓  <br>
+BERT / FinBERT Models <br>
+   ↓  <br>
 Stock & News Dataset
 
 ---
@@ -53,9 +58,6 @@ project/
 │   │   └── merge_service.py
 │   │
 │   ├── models/
-│   │   ├── finbert_model.py
-│   │   ├── modernbert_model.py
-│   │   └── ensemble_model.py
 │   │
 │   ├── schemas/
 │   │   ├── news_schema.py
@@ -172,3 +174,4 @@ This system adopts a 3-stage hierarchical filtering architecture:
 
 ### 1. Install dependencies
 pip install -r requirements.txt
+
